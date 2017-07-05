@@ -1,15 +1,3 @@
-'''Example script to generate text from Nietzsche's writings.
-
-At least 20 epochs are required before the generated text
-starts sounding coherent.
-
-It is recommended to run this script on GPU, as recurrent
-networks are quite computationally intensive.
-
-If you try this script on new data, make sure your corpus
-has at least ~100k characters. ~1M is better.
-'''
-
 from __future__ import print_function
 from keras.models import Sequential
 from keras.layers import Dense, Activation
@@ -20,7 +8,7 @@ import numpy as np
 import random
 import sys
 
-path = "/home/wang/Documents/jdk.txt"
+path = "./jdk-tokens.txt"
 filetext = open(path).read().lower()
 
 
@@ -41,28 +29,22 @@ indices_token = dict((i, c) for i, c in enumerate(uniqueTokens))
 # cut the text in semi-redundant sequences of maxlen characters
 NUM_INPUT_TOKENS = 10
 step = 3
-sentences = []
+sequences = []
 next_token = []
 
 
-"""
-NUM_INPUT_TOKENS = 20 and step = 3
------ Generating with seed: "(digits[maximumdigits] == '5' ) { for (int i=maximumdigits+1; i<count; ++i) { if (digits[i] != '0') { return true; } }"-------
-(digits[maximumdigits] == '5' ) { for (int i=maximumdigits+1; i<count; ++i) { if (digits[i] != '0') { return true; } }{}{=={=}{=={=={{{={={={{===}{{={======{}{{={{{{=={===={{={{==={={=={{{=={{{{{=={}{=={={==}{{{{{{==}{{{{{={{=}={{=={{==}{{==={={{{={=={={{=}==={===={{={====={{{{{==={=={={={}{=={===={{=={{={={={}=}{===={{{{={=={==={{{{{{====}{={{{{{static=={=}==={{{}===={{{{==={===={}}{{{{{={{}={={={=={=={=}{=={={{={//{{{={==={{==}==={=={{=}===={={{{======={====}{{{====={{=}{{={{}{===={{{===={{{={=={====}{======{{====={=
-
-"""
-
 for i in range(0, len(tokenized) - NUM_INPUT_TOKENS, step):
-    sentences.append(tokenized[i: i + NUM_INPUT_TOKENS])
+    sequences.append(tokenized[i: i + NUM_INPUT_TOKENS])
     next_token.append(tokenized[i + NUM_INPUT_TOKENS])
 
-print('nb sequences:', len(sentences))
+print('nb sequences:', len(sequences))
 
 print('Vectorization...')
-X = np.zeros((len(sentences), NUM_INPUT_TOKENS, len(uniqueTokens)), dtype=np.bool)
-y = np.zeros((len(sentences), len(uniqueTokens)), dtype=np.bool)
-for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
+X = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), \
+             dtype=np.bool)
+y = np.zeros((len(sequences), len(uniqueTokens)), dtype=np.bool)
+for i, sequence in enumerate(sequences):
+    for t, char in enumerate(sequence):
         X[i, t, token_indices[char]] = 1
     y[i, token_indices[next_token[i]]] = 1
 
@@ -76,7 +58,8 @@ model = Sequential()
 #model.add(LSTM(128, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
 
 # 2-layer LSTM
-model.add(LSTM(128,return_sequences=True, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
+model.add(LSTM(128,return_sequences=True, \
+               input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
 model.add(LSTM(128))
 
 model.add(Dense(len(uniqueTokens)))
@@ -109,17 +92,16 @@ for iteration in range(1, 60):
         print('----- diversity:', diversity)
 
         generated = [] #''
-        sentence = tokenized[start_index: start_index + NUM_INPUT_TOKENS]
-        print(type(sentence))
+        sequence = tokenized[start_index: start_index + NUM_INPUT_TOKENS]
 
-        generated=list(sentence)
+        generated=list(sequence)
 
-        print('----- Generating with seed: "' + ' '.join(sentence) + '"-------')
+        print('----- Generating with seed: "' + ' '.join(sequence) + '"-------')
         sys.stdout.write(' '.join(generated))
 
         for i in range(100):
             x = np.zeros((1, NUM_INPUT_TOKENS, len(uniqueTokens)))
-            for t, char in enumerate(sentence):
+            for t, char in enumerate(sequence):
                 x[0, t, token_indices[char]] = 1.
 
             preds = model.predict(x, verbose=0)[0]
@@ -127,8 +109,8 @@ for iteration in range(1, 60):
             next_pred_token = indices_token[next_index]
 
             generated.append(next_pred_token)
-            sentence = sentence[1:]
-            sentence.append(next_pred_token)
+            sequence = sequence[1:]
+            sequence.append(next_pred_token)
 
             sys.stdout.write(next_pred_token+" ")
             sys.stdout.flush()
