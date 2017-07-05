@@ -22,7 +22,6 @@ print('# of unique chars:', len(chars))
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
-# cut the text in semi-redundant sequences of maxlen characters
 NUM_INPUT_CHARS = 40
 STEP = 3
 sequences = []
