@@ -9,7 +9,7 @@ import sys
 
 path = "./jdk-chars.txt"
 text = open(path).read()
-slice = len(text)/10
+slice = len(text)/5
 slice = int(slice)
 
 # slice the text to make training faster

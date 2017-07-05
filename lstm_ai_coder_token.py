@@ -19,7 +19,7 @@ filetext = filetext[:slice]
 
 tokenized = filetext.split()
 
-print('corpus length:', len(tokenized))
+print('# of tokens:', len(tokenized))
 
 uniqueTokens = sorted(list(set(tokenized)))
 print('total # of unique tokens:', len(uniqueTokens))
@@ -37,7 +37,7 @@ for i in range(0, len(tokenized) - NUM_INPUT_TOKENS, step):
     sequences.append(tokenized[i: i + NUM_INPUT_TOKENS])
     next_token.append(tokenized[i + NUM_INPUT_TOKENS])
 
-print('nb sequences:', len(sequences))
+print('# of training sequences:', len(sequences))
 
 print('Vectorization...')
 X = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), \
