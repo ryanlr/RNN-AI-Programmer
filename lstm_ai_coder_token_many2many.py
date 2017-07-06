@@ -4,7 +4,6 @@ from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.layers import TimeDistributed
 from keras.optimizers import RMSprop
-from keras.utils.data_utils import get_file
 import numpy as np
 import random
 import sys
@@ -13,7 +12,7 @@ path = "./jdk-tokens.txt"
 filetext = open(path).read().lower()
 
 
-slice = len(filetext)/50
+slice = len(filetext)/100
 slice = int (slice)
 filetext = filetext[:slice]
 
@@ -31,12 +30,10 @@ indices_token = dict((i, c) for i, c in enumerate(uniqueTokens))
 NUM_INPUT_TOKENS = 10
 step = 3
 sequences = []
-next_token = []
 
 
 for i in range(0, len(tokenized) - NUM_INPUT_TOKENS-1, step):
-    sequences.append(tokenized[i: i + NUM_INPUT_TOKENS])
-    next_token.append(tokenized[i + NUM_INPUT_TOKENS])
+    sequences.append(tokenized[i: i + NUM_INPUT_TOKENS+1])
 
 print('# of training sequences:', len(sequences))
 
@@ -44,10 +41,6 @@ print('Vectorization...')
 X_temp = np.zeros((len(sequences), NUM_INPUT_TOKENS + 1, len(uniqueTokens)), dtype=np.bool)
 X = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), dtype=np.bool)
 y = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), dtype=np.bool)
-
-# for example
-# X[1] = [3, 5, 9, 1]
-# y[1] = [5, 9, 1]
 
 for i, sequence in enumerate(sequences):
     for t, char in enumerate(sequence):
