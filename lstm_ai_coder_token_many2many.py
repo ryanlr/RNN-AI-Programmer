@@ -2,6 +2,7 @@ from __future__ import print_function
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
+from keras.layers import TimeDistributed
 from keras.optimizers import RMSprop
 from keras.utils.data_utils import get_file
 import numpy as np
@@ -12,7 +13,7 @@ path = "./jdk-tokens.txt"
 filetext = open(path).read().lower()
 
 
-slice = len(filetext)/500
+slice = len(filetext)/50
 slice = int (slice)
 filetext = filetext[:slice]
 
@@ -33,35 +34,43 @@ sequences = []
 next_token = []
 
 
-for i in range(0, len(tokenized) - NUM_INPUT_TOKENS, step):
+for i in range(0, len(tokenized) - NUM_INPUT_TOKENS-1, step):
     sequences.append(tokenized[i: i + NUM_INPUT_TOKENS])
     next_token.append(tokenized[i + NUM_INPUT_TOKENS])
 
 print('# of training sequences:', len(sequences))
 
 print('Vectorization...')
-X = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), \
-             dtype=np.bool)
-y = np.zeros((len(sequences), len(uniqueTokens)), dtype=np.bool)
+X_temp = np.zeros((len(sequences), NUM_INPUT_TOKENS + 1, len(uniqueTokens)), dtype=np.bool)
+X = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), dtype=np.bool)
+y = np.zeros((len(sequences), NUM_INPUT_TOKENS, len(uniqueTokens)), dtype=np.bool)
+
+# for example
+# X[1] = [3, 5, 9, 1]
+# y[1] = [5, 9, 1]
+
 for i, sequence in enumerate(sequences):
     for t, char in enumerate(sequence):
-        X[i, t, token_indices[char]] = 1
-    y[i, token_indices[next_token[i]]] = 1
+        X_temp[i, t, token_indices[char]] = 1
 
-# len 20 --> next
+num_sequences = len(X_temp)
+for i, vec in enumerate(X_temp):
+    y[i] = vec[1:]
+    X[i]= vec[:-1]
+
 
 # build the model: a single LSTM
 print('Build model...')
 model = Sequential()
 
 # 1-layer LSTM
-model.add(LSTM(128, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
+model.add(LSTM(128, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens)), return_sequences=True))
 
 # 2-layer LSTM
-#model.add(LSTM(128,return_sequences=True, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
-#model.add(LSTM(128))
+#model.add(LSTM(128, return_sequences=True, input_shape=(NUM_INPUT_TOKENS, len(uniqueTokens))))
+#model.add(LSTM(128, return_sequences=True))
 
-model.add(Dense(len(uniqueTokens)))
+model.add(TimeDistributed(Dense(len(uniqueTokens))))
 model.add(Activation('softmax'))
 
 optimizer = RMSprop(lr=0.01)
@@ -70,7 +79,6 @@ model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 print(model.summary())
 
 def sample(preds, temperature=1.0):
-    # helper function to sample an index from a probability array
     preds = np.asarray(preds).astype('float64')
     preds = np.log(preds) / temperature
     exp_preds = np.exp(preds)
@@ -102,13 +110,12 @@ for iteration in range(1, 60):
         for i in range(100):
             x = np.zeros((1, NUM_INPUT_TOKENS, len(uniqueTokens)))
             for t, char in enumerate(sequence):
-                x[0, t, token_indices[char]] = 1. # given input only one sequence with length of NUM_INPUT_TOKENS
+                x[0, t, token_indices[char]] = 1.
 
-            preds = model.predict(x, verbose=0)[0] # index 0 means only one element in the prediction
+            preds = model.predict(x, verbose=0)[0][-1] # only get the last element
             next_index = sample(preds, diversity)
             next_pred_token = indices_token[next_index]
 
-            generated.append(next_pred_token)
             sequence = sequence[1:]
             sequence.append(next_pred_token)
 
